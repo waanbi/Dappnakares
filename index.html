@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bank DAPP</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f0f4f8;
+    }
+    h2 {
+      color: #333;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      font-size: 1rem;
+    }
+    #output {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #006400;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>💰 Bank DApp</h2>
+  <p>รหัสนักศึกษา: 65039678 | ชื่อ-นามสกุล: นายนคเรศ โพธิรัตน์</p>
+
+  <button onclick="connect()">🔗 Connect Wallet</button><br><br>
+
+  <input type="number" id="amount" placeholder="Amount in ETH" /><br>
+  <button onclick="deposit()">💸 Deposit</button>
+  <button onclick="withdraw()">🏧 Withdraw</button>
+  <button onclick="checkBalance()">📊 Check Balance</button>
+
+  <p id="output">ยังไม่เชื่อมต่อ Wallet</p>
+
+  <script>
+    let web3;
+    let contract;
+    const contractAddress = "0x62b13E8a0AcAFa488e27fCb9F6391D3E00c3866e";
+
+    const abi = [
+      {
+        "inputs": [],
+        "name": "checkBalance",
+        "outputs": [{"internalType": "uint256","name": "balance","type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "deposit",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [{"internalType": "uint256","name": "amount","type": "uint256"}],
+        "name": "withdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {"indexed": true,"internalType": "address","name": "owner","type": "address"},
+          {"indexed": false,"internalType": "uint256","name": "amount","type": "uint256"}
+        ],
+        "name": "Deposit",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {"indexed": true,"internalType": "address","name": "owner","type": "address"},
+          {"indexed": false,"internalType": "uint256","name": "amount","type": "uint256"}
+        ],
+        "name": "Withdraw",
+        "type": "event"
+      }
+    ];
+
+    async function connect() {
+      if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        contract = new web3.eth.Contract(abi, contractAddress);
+        document.getElementById("output").innerText = "✅ Wallet connected!";
+      } else {
+        alert("❌ Please install Metamask");
+      }
+    }
+
+    async function deposit() {
+      const amount = document.getElementById("amount").value;
+      const accounts = await web3.eth.getAccounts();
+      try {
+        await contract.methods.deposit().send({
+          from: accounts[0],
+          value: web3.utils.toWei(amount, "ether")
+        });
+        document.getElementById("output").innerText = `✅ Deposited ${amount} ETH`;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("output").innerText = "❌ Deposit failed";
+      }
+    }
+
+    async function withdraw() {
+      const amount = document.getElementById("amount").value;
+      const accounts = await web3.eth.getAccounts();
+      try {
+        await contract.methods.withdraw(web3.utils.toWei(amount, "ether")).send({ from: accounts[0] });
+        document.getElementById("output").innerText = `✅ Withdrawn ${amount} ETH`;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("output").innerText = "❌ Withdraw failed";
+      }
+    }
+
+    async function checkBalance() {
+      const accounts = await web3.eth.getAccounts();
+      try {
+        const balance = await contract.methods.checkBalance().call({ from: accounts[0] });
+        document.getElementById("output").innerText = `💼 Your balance: ${web3.utils.fromWei(balance, "ether")} ETH`;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("output").innerText = "❌ Failed to check balance";
+      }
+    }
+  </script>
+</body>
+</html>
